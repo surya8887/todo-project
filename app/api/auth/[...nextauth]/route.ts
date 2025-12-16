@@ -1,17 +1,20 @@
-import NextAuth from "next-auth"
+import NextAuth, { type NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { connectDB } from "@/app/lib/db"
 import User from "@/app/models/User"
 import bcrypt from "bcryptjs"
 
-export const authOptions = {
+/**
+ * NextAuth configuration
+ */
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { type: "text" },
-        password: { type: "password" }
+        password: { type: "password" },
       },
       async authorize(credentials) {
         await connectDB()
@@ -31,19 +34,19 @@ export const authOptions = {
         return {
           id: user._id.toString(),
           name: user.name,
-          email: user.email
+          email: user.email,
         }
-      }
+      },
     }),
 
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
-    })
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
 
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
 
   callbacks: {
@@ -52,11 +55,12 @@ export const authOptions = {
 
       if (account?.provider === "google") {
         const exists = await User.findOne({ email: user.email })
+
         if (!exists) {
           await User.create({
             name: user.name,
             email: user.email,
-            provider: "google"
+            provider: "google",
           })
         }
       }
@@ -64,7 +68,9 @@ export const authOptions = {
     },
 
     async jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+      }
       return token
     },
 
@@ -73,13 +79,12 @@ export const authOptions = {
         session.user.id = token.id as string
       }
       return session
-    }
+    },
   },
 
   pages: {
-    signIn: "/login"
+    signIn: "/login",
   },
-  
 }
 
 const handler = NextAuth(authOptions)
